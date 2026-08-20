@@ -1,0 +1,83 @@
+"""
+HTTP-сервер парсера. Единственная задача — отдавать данные из SQLite
+(накопленные Celery-таской через parser.py) агенту телеграм-бота.
+
+По заданию ИИ-агент фильтрует ровно по 3 параметрам — бюджет, метраж, ЖК —
+плюс top_n для количества результатов. Никаких rooms/floor/status здесь
+специально не выставлено наружу (хотя Repo их поддерживает "под капотом").
+"""
+
+from fastapi import FastAPI, Query
+from fastapi.responses import JSONResponse
+
+from repo import Repo
+
+app = FastAPI(title="dogma-flats-parser")
+repo = Repo()
+
+# Жёсткий кап независимо от того, что прислала модель (включая "забыла
+# передать top_n вообще"). Без этого одна широкая фильтрация может утащить
+# в промпт тысячи строк и сделать ответ агента медленным и дорогим по токенам.
+DEFAULT_TOP_N = 5
+MAX_TOP_N = 20
+
+# Поля, которые реально нужны агенту/пользователю, включая ссылку на лот
+# (обязательна по заданию) и цену за м² (чтобы агент мог обоснованно
+# объяснить, почему именно эти варианты — "лучшие", а не выдумывать).
+_PUBLIC_FIELDS = ("жк", "цена", "площадь", "комнат", "этаж", "статус", "ссылка")
+
+
+def _to_public(flat: dict) -> dict:
+    public = {k: flat[k] for k in _PUBLIC_FIELDS if k in flat}
+    price, area = flat.get("цена"), flat.get("площадь")
+    if price is not None and area:
+        public["цена_за_м2"] = round(price / area)
+    return public
+
+
+@app.on_event("startup")
+def on_startup() -> None:
+    repo.create_db()
+
+
+@app.get("/flats")
+def get_flats(
+    project_id: int | None = Query(None, description="ID ЖК"),
+    min_price: float | None = Query(None, description="Минимальная цена, руб."),
+    max_price: float | None = Query(None, description="Максимальная цена, руб."),
+    min_area: float | None = Query(None, description="Минимальная площадь, м²"),
+    max_area: float | None = Query(None, description="Максимальная площадь, м²"),
+    top_n: int | None = Query(None, description="Сколько лучших вариантов вернуть"),
+):
+    safe_top_n = DEFAULT_TOP_N if top_n is None else max(1, min(top_n, MAX_TOP_N))
+
+    filters = dict(
+        project_id=project_id,
+        min_price=min_price,
+        max_price=max_price,
+        min_area=min_area,
+        max_area=max_area,
+    )
+
+    try:
+        total_count = repo.count_flats(**filters)
+        flats = repo.search_flats(**filters, limit=safe_top_n)
+    except ValueError as exc:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "error": str(exc)},
+        )
+
+    return {
+        "success": True,
+        "total_count": total_count,          # сколько всего подходит под фильтр
+        "returned_count": len(flats),        # сколько реально отдано ниже
+        "flats": [_to_public(f) for f in flats],
+    }
+
+
+@app.get("/projects")
+def get_projects():
+    """Список ЖК (id + название) — свериться, актуален ли enum project_id
+    в agent/tool.py, если на сайте появятся новые ЖК."""
+    return {"projects": repo.list_projects()}
