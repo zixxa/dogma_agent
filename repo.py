@@ -5,11 +5,11 @@ from repo_content import DB_PATH, DDL, UPSERT
 
 
 _ALLOWED_ORDER_FIELDS = {
-    "цена": "цена",
-    "площадь": "площадь",
-    "этаж": "этаж",
-    "комнат": "комнат",
-    "цена_за_метр": "(цена * 1.0 / NULLIF(площадь, 0))",
+    "price": "price",
+    "area": "area",
+    "floor": "floor",
+    "rooms": "rooms",
+    "price_per_sqm": "(price * 1.0 / NULLIF(area, 0))",
 }
 
 
@@ -57,32 +57,32 @@ class Repo:
         params: list = []
 
         if min_price is not None:
-            clauses.append("цена >= ?")
+            clauses.append("price >= ?")
             params.append(min_price)
         if max_price is not None:
-            clauses.append("цена <= ?")
+            clauses.append("price <= ?")
             params.append(max_price)
         if min_area is not None:
-            clauses.append("площадь >= ?")
+            clauses.append("area >= ?")
             params.append(min_area)
         if max_area is not None:
-            clauses.append("площадь <= ?")
+            clauses.append("area <= ?")
             params.append(max_area)
         if floor is not None:
-            clauses.append("этаж = ?")
+            clauses.append("floor = ?")
             params.append(floor)
         if floor_min is not None:
-            clauses.append("этаж >= ?")
+            clauses.append("floor >= ?")
             params.append(floor_min)
         if floor_max is not None:
-            clauses.append("этаж <= ?")
+            clauses.append("floor <= ?")
             params.append(floor_max)
 
         if status is not None:
-            clauses.append("LOWER_UNI(статус) = LOWER_UNI(?)")
+            clauses.append("LOWER_UNI(status) = LOWER_UNI(?)")
             params.append(status)
         elif only_available:
-            clauses.append("статус_код = 2")
+            clauses.append("status_code = 2")
 
         # Фильтр по project_id (число, надёжный вариант — совпадает с тем,
         # что теперь передаёт агент через enum в tool.py). Если передали ещё
@@ -101,13 +101,13 @@ class Repo:
             # LOWER_UNI, а не встроенный LOWER()/COLLATE NOCASE.
             names = [project_name] if isinstance(project_name, str) else list(project_name)
             placeholders = ", ".join("LOWER_UNI(?)" for _ in names)
-            clauses.append(f"LOWER_UNI(жк) IN ({placeholders})")
+            clauses.append(f"LOWER_UNI(project_name) IN ({placeholders})")
             params.extend(names)
 
         if rooms is not None:
             room_values = [rooms] if isinstance(rooms, int) else list(rooms)
             placeholders = ", ".join("?" for _ in room_values)
-            clauses.append(f"комнат IN ({placeholders})")
+            clauses.append(f"rooms IN ({placeholders})")
             params.extend(room_values)
 
         where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
@@ -127,13 +127,13 @@ class Repo:
             floor_max: int | None = None,
             status: str | None = None,
             only_available: bool = True,
-            order_by: str = "цена",
+            order_by: str = "price",
             order_dir: str = "ASC",
             limit: int | None = None,
     ) -> list[dict]:
         """Поиск квартир по фильтрам.
 
-        min_price/max_price — диапазон цены (со скидкой, поле "цена").
+        min_price/max_price — диапазон цены (со скидкой, поле "price").
         min_area/max_area     — диапазон площади в м².
         project_id             — ID ЖК (одно значение или список) — самый
                                   надёжный способ фильтрации по ЖК, т.к. не
@@ -147,9 +147,9 @@ class Repo:
         status                — текст статуса ("в продаже", "забронирована"
                                  и т.п.), без учёта регистра. Если указан —
                                  имеет приоритет над only_available.
-        only_available        — True: только квартиры со статус_код=2
+        only_available        — True: только квартиры со status_code=2
                                  ("в продаже"); игнорируется, если задан status.
-        order_by               — "цена" | "площадь" | "этаж" | "комнат" | "цена_за_метр"
+        order_by               — "price" | "area" | "floor" | "rooms" | "price_per_sqm"
         order_dir               — "ASC" | "DESC"
         limit                  — максимум записей; для топ-N просто передайте
                                   limit=3/limit=5 (сортировка — по order_by).
@@ -235,7 +235,7 @@ class Repo:
             floor_max: int | None = None,
             status: str | None = None,
             top_n: int = 5,
-            order_by: str = "цена",
+            order_by: str = "price",
             order_dir: str = "ASC",
     ) -> list[dict]:
         """Топ-N подходящих квартир по фильтрам.
@@ -268,7 +268,7 @@ class Repo:
         with closing(sqlite3.connect(self.db_path)) as conn:
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
-                "SELECT DISTINCT project_id, жк FROM flats "
-                "WHERE project_id IS NOT NULL ORDER BY жк"
+                "SELECT DISTINCT project_id, project_name FROM flats "
+                "WHERE project_id IS NOT NULL ORDER BY project_name"
             ).fetchall()
         return [dict(row) for row in rows]

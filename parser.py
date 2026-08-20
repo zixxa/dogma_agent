@@ -105,20 +105,20 @@ class Parser:
 
         return {
             "id": flat_id,
-            "жк": raw.get("project_name"),
+            "project_name": raw.get("project_name"),
             "project_id": raw.get("project_id"),
-            "цена": price,
-            "цена_без_скидки": raw.get("cost"),
-            "площадь": raw.get("area"),
-            "комнат": raw.get("room"),
-            "этаж": raw.get("floor"),
-            "этажей_в_доме": raw.get("floor_max"),
-            "статус_код": status_code,
-            "статус": STATUS_MAP.get(status_code, f"неизвестно ({status_code})"),
-            "адрес": raw.get("address"),
-            "номер_квартиры": raw.get("object_number"),
-            "ссылка": f"{self.BASE_URL}/flat/{flat_id}" if flat_id else None,
-            "обновлено": datetime.now(timezone.utc).isoformat(),
+            "price": price,
+            "price_without_discount": raw.get("cost"),
+            "area": raw.get("area"),
+            "rooms": raw.get("room"),
+            "floor": raw.get("floor"),
+            "floors_total": raw.get("floor_max"),
+            "status_code": status_code,
+            "status": STATUS_MAP.get(status_code, f"неизвестно ({status_code})"),
+            "address": raw.get("address"),
+            "apartment_number": raw.get("object_number"),
+            "url": f"{self.BASE_URL}/flat/{flat_id}" if flat_id else None,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }
 
     def fetch_all(self) -> list[dict]:

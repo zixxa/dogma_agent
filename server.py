@@ -2,9 +2,8 @@
 HTTP-сервер парсера. Единственная задача — отдавать данные из SQLite
 (накопленные Celery-таской через parser.py) агенту телеграм-бота.
 
-По заданию ИИ-агент фильтрует ровно по 3 параметрам — бюджет, метраж, ЖК —
-плюс top_n для количества результатов. Никаких rooms/floor/status здесь
-специально не выставлено наружу (хотя Repo их поддерживает "под капотом").
+По заданию ИИ-агент фильтрует по бюджету, метражу, ЖК и количеству комнат
+(студия = rooms=0), плюс top_n для количества результатов.
 """
 
 from fastapi import FastAPI, Query
@@ -24,14 +23,16 @@ MAX_TOP_N = 20
 # Поля, которые реально нужны агенту/пользователю, включая ссылку на лот
 # (обязательна по заданию) и цену за м² (чтобы агент мог обоснованно
 # объяснить, почему именно эти варианты — "лучшие", а не выдумывать).
-_PUBLIC_FIELDS = ("жк", "цена", "площадь", "комнат", "этаж", "статус", "ссылка")
+_PUBLIC_FIELDS = (
+    "project_name", "price", "area", "rooms", "floor", "status", "url",
+)
 
 
 def _to_public(flat: dict) -> dict:
     public = {k: flat[k] for k in _PUBLIC_FIELDS if k in flat}
-    price, area = flat.get("цена"), flat.get("площадь")
+    price, area = flat.get("price"), flat.get("area")
     if price is not None and area:
-        public["цена_за_м2"] = round(price / area)
+        public["price_per_sqm"] = round(price / area)
     return public
 
 
@@ -47,6 +48,7 @@ def get_flats(
     max_price: float | None = Query(None, description="Максимальная цена, руб."),
     min_area: float | None = Query(None, description="Минимальная площадь, м²"),
     max_area: float | None = Query(None, description="Максимальная площадь, м²"),
+    rooms: int | None = Query(None, ge=0, description="Количество комнат (0 = студия)"),
     top_n: int | None = Query(None, description="Сколько лучших вариантов вернуть"),
 ):
     safe_top_n = DEFAULT_TOP_N if top_n is None else max(1, min(top_n, MAX_TOP_N))
@@ -57,6 +59,7 @@ def get_flats(
         max_price=max_price,
         min_area=min_area,
         max_area=max_area,
+        rooms=rooms,
     )
 
     try:

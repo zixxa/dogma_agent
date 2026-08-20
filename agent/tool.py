@@ -1,18 +1,23 @@
 """
 Схема инструмента get_flats в формате OpenAI function calling.
-
-По заданию ИИ-агенту разрешено фильтровать ровно по 3 параметрам —
-бюджет, метраж, ЖК — плюс top_n для количества результатов. rooms/floor/
-status сюда намеренно не включены (хотя сам Repo их поддерживает).
 """
+
+from parser_content import ACTIVE_PROJECT_IDS, COMPLEXES
+
+
+def _complexes_description() -> str:
+    parts = [f"{pid} — {COMPLEXES[pid]}" for pid in ACTIVE_PROJECT_IDS]
+    return "ID ЖК. " + "; ".join(parts) + "."
+
 
 TOOL = {
     "type": "function",
     "function": {
         "name": "get_flats",
         "description": (
-            "Найти квартиры по бюджету, площади и ЖК. "
-            "Если пользователь указал ЖК, обязательно передай project_id."
+            "Найти квартиры по бюджету, площади, ЖК и количеству комнат. "
+            "Если пользователь указал ЖК, обязательно передай project_id. "
+            "Студия — это rooms=0."
         ),
         "parameters": {
             "type": "object",
@@ -35,17 +40,16 @@ TOOL = {
                 },
                 "project_id": {
                     "type": "integer",
-                    "enum": [3, 4, 5, 6, 11, 12, 13, 16],
+                    "enum": ACTIVE_PROJECT_IDS,
+                    "description": _complexes_description(),
+                },
+                "rooms": {
+                    "type": "integer",
+                    "minimum": 0,
                     "description": (
-                        "ID ЖК. "
-                        "3 — МКР Самолет; "
-                        "4 — DOGMA ПАРК; "
-                        "5 — Рекорд 2; "
-                        "6 — Парк Победы; "
-                        "11 — РИДЗ; "
-                        "12 — САМОЛЁТ7; "
-                        "13 — ГРЕЙД; "
-                        "16 — Парк Победы 3."
+                        "Количество комнат: 0 — студия, 1 — однокомнатная, "
+                        "2 — двухкомнатная и т.д. Передавай только если "
+                        "пользователь явно указал."
                     ),
                 },
                 "top_n": {

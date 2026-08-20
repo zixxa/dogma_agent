@@ -1,0 +1,8 @@
+aiogram==3.30.0
+celery==5.6.3
+fastapi==0.141.1
+httpx==0.28.1
+openai==3.3.1
+python-dotenv==1.2.3
+redis==6.4.0
+uvicorn==0.52.4

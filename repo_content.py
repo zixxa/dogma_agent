@@ -3,46 +3,46 @@ DB_PATH = "dogma_flats.sqlite3"
 DDL = """
 CREATE TABLE IF NOT EXISTS flats (
     id INTEGER PRIMARY KEY,
-    жк TEXT,
+    project_name TEXT,
     project_id INTEGER,
-    цена INTEGER,
-    цена_без_скидки INTEGER,
-    площадь REAL,
-    комнат INTEGER,
-    этаж INTEGER,
-    этажей_в_доме INTEGER,
-    статус_код INTEGER,
-    статус TEXT,
-    адрес TEXT,
-    номер_квартиры TEXT,
-    ссылка TEXT,
-    обновлено TEXT
+    price INTEGER,
+    price_without_discount INTEGER,
+    area REAL,
+    rooms INTEGER,
+    floor INTEGER,
+    floors_total INTEGER,
+    status_code INTEGER,
+    status TEXT,
+    address TEXT,
+    apartment_number TEXT,
+    url TEXT,
+    updated_at TEXT
 );
 """
 
 UPSERT = """
 INSERT INTO flats (
-    id, жк, project_id, цена, цена_без_скидки, площадь, комнат,
-    этаж, этажей_в_доме, статус_код, статус, адрес, номер_квартиры,
-    ссылка, обновлено
+    id, project_name, project_id, price, price_without_discount, area, rooms,
+    floor, floors_total, status_code, status, address, apartment_number,
+    url, updated_at
 ) VALUES (
-    :id, :жк, :project_id, :цена, :цена_без_скидки, :площадь, :комнат,
-    :этаж, :этажей_в_доме, :статус_код, :статус, :адрес, :номер_квартиры,
-    :ссылка, :обновлено
+    :id, :project_name, :project_id, :price, :price_without_discount, :area, :rooms,
+    :floor, :floors_total, :status_code, :status, :address, :apartment_number,
+    :url, :updated_at
 )
 ON CONFLICT(id) DO UPDATE SET
-    жк=excluded.жк,
+    project_name=excluded.project_name,
     project_id=excluded.project_id,
-    цена=excluded.цена,
-    цена_без_скидки=excluded.цена_без_скидки,
-    площадь=excluded.площадь,
-    комнат=excluded.комнат,
-    этаж=excluded.этаж,
-    этажей_в_доме=excluded.этажей_в_доме,
-    статус_код=excluded.статус_код,
-    статус=excluded.статус,
-    адрес=excluded.адрес,
-    номер_квартиры=excluded.номер_квартиры,
-    ссылка=excluded.ссылка,
-    обновлено=excluded.обновлено;
+    price=excluded.price,
+    price_without_discount=excluded.price_without_discount,
+    area=excluded.area,
+    rooms=excluded.rooms,
+    floor=excluded.floor,
+    floors_total=excluded.floors_total,
+    status_code=excluded.status_code,
+    status=excluded.status,
+    address=excluded.address,
+    apartment_number=excluded.apartment_number,
+    url=excluded.url,
+    updated_at=excluded.updated_at;
 """
