@@ -10,7 +10,7 @@
 BASE_URL=https://dogma.ru
 
 # Бот
-TG_BOT=123456:ABC-DEF...          # токен от @BotFather
+TG_BOT=123456:ABC-DEF...           # токен от @BotFather
 LLM_API_KEY=sk-or-...              # ключ провайдера LLM (OpenRouter/AITUNNEL)
 PARSER_URL=http://localhost:8000   # адрес запущенного server.py
 
@@ -60,10 +60,10 @@ celery -A tasks beat --loglevel=info
 Прогнать задачу вручную, не дожидаясь расписания:
 
 ```bash
-python -c "from tasks import scrape_dogma_flats; scrape_dogma_flats.delay()"
+pip install -r requirements.txt
 ```
 
-### 3. Сервер (отдаёт данные из БД агенту)
+### 3. Сервер
 
 ```bash
 uvicorn server:app --host 0.0.0.0 --port 8000

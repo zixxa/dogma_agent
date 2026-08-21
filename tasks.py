@@ -1,17 +1,3 @@
-"""
-Celery-обвязка вокруг parser.fetch_and_store().
-
-Требуется брокер — Redis (у вас уже есть в стеке):
-    pip install celery redis
-
-Запуск (два отдельных процесса, аналогично uvicorn/bot из прошлого разговора):
-    celery -A tasks worker --loglevel=info
-    celery -A tasks beat --loglevel=info
-
-Для локальной разработки можно объединить в один процесс (НЕ для продакшена):
-    celery -A tasks worker --beat --loglevel=info
-"""
-
 import os
 
 from celery import Celery
